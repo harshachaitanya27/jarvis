@@ -5,6 +5,8 @@ the internal model. Notably, no response ever exposes password hashes or
 provider keys.
 """
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -39,3 +41,25 @@ class UserProfile(BaseModel):
     topics: list[str]
     configured_providers: list[str]
     daily_question_quota: int
+
+
+class EpisodeSummary(BaseModel):
+    id: str
+    title: str | None
+    status: str
+    topics: list[str]
+    duration_seconds: float | None
+    created_at: datetime | None
+    # Present only when the episode is ready; a playable (signed where supported) URL.
+    audio_url: str | None
+
+
+class TranscriptSegmentModel(BaseModel):
+    speaker: str
+    text: str
+    start_seconds: float | None = None
+
+
+class TranscriptResponse(BaseModel):
+    episode_id: str
+    segments: list[TranscriptSegmentModel]
