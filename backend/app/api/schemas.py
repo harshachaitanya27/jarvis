@@ -9,6 +9,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.domain.entities import FeedbackType
+
 
 class SignupRequest(BaseModel):
     email: str
@@ -63,3 +65,16 @@ class TranscriptSegmentModel(BaseModel):
 class TranscriptResponse(BaseModel):
     episode_id: str
     segments: list[TranscriptSegmentModel]
+
+
+class FeedbackCreate(BaseModel):
+    type: FeedbackType  # invalid values are rejected with 422
+    position_seconds: float | None = None
+
+
+class FeedbackEventModel(BaseModel):
+    id: str
+    episode_id: str
+    type: str
+    position_seconds: float | None
+    created_at: datetime | None
