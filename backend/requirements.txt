@@ -22,6 +22,9 @@ httpx==0.28.1
 # ── Scheduling (nightly generation batch) ────────────────────────
 apscheduler==3.11.0
 
+# ── Tracing API (for hand-written spans; no-op unless OTel is set up) ─
+opentelemetry-api==1.45.0
+
 # ── Optional adapters (uncomment when that adapter is used) ───────
 # boto3==1.35.90         # storage: s3 / r2 / minio / supabase-s3
 # supabase==2.11.0       # storage/auth: supabase adapter only

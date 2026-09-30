@@ -23,8 +23,10 @@ from app.core.providers import build_tts as _build_tts
 from app.domain.entities import Episode, User
 from app.services.generation import GenerationService
 from app.services.users import UserService
+from app.tracing import get_tracer
 
 log = logging.getLogger(__name__)
+tracer = get_tracer(__name__)
 
 LLMBuilder = Callable[[str, str], LLMProvider]
 TTSBuilder = Callable[[str, str], TTSProvider]
@@ -63,15 +65,22 @@ class GenerationJobRunner:
         topic_sets = select_episode_topics(user, count)
         log.info("generating %d episode(s) for user %s", len(topic_sets), user.id)
         produced: list[Episode] = []
-        for topics in topic_sets:
-            episode = await self.episodes.create(
-                Episode(id="", user_id=user.id, topics=topics)
-            )
-            try:
-                await self.gen.run(episode, llm, tts, fmt=fmt, target_minutes=minutes)
-                produced.append(episode)
-            except Exception:  # noqa: BLE001 - one bad episode shouldn't stop the batch
-                log.exception("episode %s failed for user %s", episode.id, user.id)
+        with tracer.start_as_current_span("jobs.run_for_user") as span:
+            span.set_attribute("user.id", user.id)
+            span.set_attribute("episodes.requested", len(topic_sets))
+            for topics in topic_sets:
+                episode = await self.episodes.create(
+                    Episode(id="", user_id=user.id, topics=topics)
+                )
+                try:
+                    # generation.run opens its own child span under this one.
+                    await self.gen.run(
+                        episode, llm, tts, fmt=fmt, target_minutes=minutes
+                    )
+                    produced.append(episode)
+                except Exception:  # noqa: BLE001 - one bad episode shouldn't stop the batch
+                    log.exception("episode %s failed for user %s", episode.id, user.id)
+            span.set_attribute("episodes.produced", len(produced))
         log.info(
             "user %s: %d/%d episode(s) produced", user.id, len(produced), len(topic_sets)
         )
