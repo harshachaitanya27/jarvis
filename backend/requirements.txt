@@ -11,8 +11,10 @@ sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0          # Postgres driver; swap for another engine via URL
 alembic==1.14.0          # schema migrations
 
-# ── Secrets ───────────────────────────────────────────────────────
+# ── Secrets / auth ────────────────────────────────────────────────
 cryptography==44.0.0     # Fernet encryption for user BYO keys
+pyjwt==2.10.1            # JWT access tokens
+bcrypt==4.2.1            # password hashing
 
 # ── HTTP client for provider adapters ────────────────────────────
 httpx==0.28.1

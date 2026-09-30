@@ -7,6 +7,7 @@ filesystem. Feature routers are mounted as they are built.
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.api import auth, users
 from app.config import get_settings
 
 settings = get_settings()
@@ -17,6 +18,10 @@ app = FastAPI(title="Jarvis", version="0.1.0")
 @app.get("/health", tags=["system"])
 async def health() -> dict:
     return {"status": "ok", "env": settings.app_env}
+
+
+app.include_router(auth.router)
+app.include_router(users.router)
 
 
 # In local mode, serve generated episodes so the app can play them back.

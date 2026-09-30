@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     # Secrets — Fernet key encrypting each user's BYO provider keys at rest
     key_encryption_key: str = ""
 
+    # Auth — JWT signing for access tokens
+    jwt_secret: str = ""
+    jwt_algorithm: str = "HS256"
+    access_token_ttl_minutes: int = 60 * 24 * 7  # 7 days
+
     # Generation defaults (a user's stored config may override these)
     default_llm_provider: str = "openai"
     default_tts_provider: str = "openai"

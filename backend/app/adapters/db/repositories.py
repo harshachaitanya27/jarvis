@@ -36,6 +36,7 @@ def _user(row: m.UserRow) -> User:
     return User(
         id=row.id,
         email=row.email,
+        password_hash=row.password_hash,
         onboarding_topics=list(row.onboarding_topics or []),
         provider_keys_encrypted=dict(row.provider_keys_encrypted or {}),
         daily_question_quota=row.daily_question_quota,
@@ -77,6 +78,7 @@ class SqlUserRepository(UserRepository):
     async def create(self, user: User) -> User:
         row = m.UserRow(
             email=user.email,
+            password_hash=user.password_hash,
             onboarding_topics=user.onboarding_topics,
             provider_keys_encrypted=user.provider_keys_encrypted,
             daily_question_quota=user.daily_question_quota,
@@ -92,6 +94,7 @@ class SqlUserRepository(UserRepository):
         if row is None:
             raise KeyError(user.id)
         row.email = user.email
+        row.password_hash = user.password_hash
         row.onboarding_topics = user.onboarding_topics
         row.provider_keys_encrypted = user.provider_keys_encrypted
         row.daily_question_quota = user.daily_question_quota
