@@ -35,7 +35,9 @@ def build_llm(provider: str, api_key: str, model: str | None = None) -> LLMProvi
 
             return OpenAILLMProvider(api_key, model or "gpt-4o-mini")
         case "anthropic":
-            raise NotImplementedError("anthropic llm adapter not implemented yet")
+            from app.adapters.llm.anthropic import AnthropicLLMProvider
+
+            return AnthropicLLMProvider(api_key, model or "claude-opus-4-8")
         case "gemini":
             raise NotImplementedError("gemini llm adapter not implemented yet")
         case other:
@@ -50,7 +52,9 @@ def build_tts(provider: str, api_key: str, model: str | None = None) -> TTSProvi
 
             return OpenAITTSProvider(api_key, model or "tts-1")
         case "elevenlabs":
-            raise NotImplementedError("elevenlabs tts adapter not implemented yet")
+            from app.adapters.tts.elevenlabs import ElevenLabsTTSProvider
+
+            return ElevenLabsTTSProvider(api_key, model or "eleven_turbo_v2_5")
         case other:
             raise ValueError(f"unknown tts provider: {other!r}")
 
