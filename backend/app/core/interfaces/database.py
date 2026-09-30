@@ -48,6 +48,9 @@ class EpisodeRepository(ABC):
     ) -> None: ...
 
     @abstractmethod
+    async def set_title(self, episode_id: str, title: str) -> None: ...
+
+    @abstractmethod
     async def set_audio(
         self, episode_id: str, audio_key: str, duration_seconds: float
     ) -> None: ...
