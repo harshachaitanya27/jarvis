@@ -141,6 +141,13 @@ class SqlEpisodeRepository(EpisodeRepository):
         row.error = error
         await self.s.flush()
 
+    async def set_title(self, episode_id: str, title: str) -> None:
+        row = await self.s.get(m.EpisodeRow, episode_id)
+        if row is None:
+            raise KeyError(episode_id)
+        row.title = title
+        await self.s.flush()
+
     async def set_audio(
         self, episode_id: str, audio_key: str, duration_seconds: float
     ) -> None:

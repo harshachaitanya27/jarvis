@@ -6,7 +6,9 @@ leak into business logic.
 """
 
 from app.config import Settings, get_settings
+from app.core.interfaces.llm import LLMProvider
 from app.core.interfaces.storage import StorageProvider
+from app.core.interfaces.tts import TTSProvider
 
 
 def build_storage(settings: Settings | None = None) -> StorageProvider:
@@ -24,6 +26,32 @@ def build_storage(settings: Settings | None = None) -> StorageProvider:
             raise ValueError(f"unknown storage_provider: {other!r}")
 
 
-# LLM / TTS / STT / Auth factories are added as their adapters land. Each will
-# follow the same shape: match on the configured provider name, import the one
-# adapter module lazily, return the interface type.
+def build_llm(provider: str, api_key: str, model: str | None = None) -> LLMProvider:
+    """Build the LLM adapter for a user, using their BYO key."""
+    match provider:
+        case "openai":
+            from app.adapters.llm.openai import OpenAILLMProvider
+
+            return OpenAILLMProvider(api_key, model or "gpt-4o-mini")
+        case "anthropic":
+            raise NotImplementedError("anthropic llm adapter not implemented yet")
+        case "gemini":
+            raise NotImplementedError("gemini llm adapter not implemented yet")
+        case other:
+            raise ValueError(f"unknown llm provider: {other!r}")
+
+
+def build_tts(provider: str, api_key: str, model: str | None = None) -> TTSProvider:
+    """Build the TTS adapter for a user, using their BYO key."""
+    match provider:
+        case "openai":
+            from app.adapters.tts.openai import OpenAITTSProvider
+
+            return OpenAITTSProvider(api_key, model or "tts-1")
+        case "elevenlabs":
+            raise NotImplementedError("elevenlabs tts adapter not implemented yet")
+        case other:
+            raise ValueError(f"unknown tts provider: {other!r}")
+
+
+# STT / Auth factories follow the same shape as their adapters land.
