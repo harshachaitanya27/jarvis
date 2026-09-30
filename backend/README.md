@@ -72,6 +72,23 @@ A user must have stored a BYO key for the configured default provider
 (`DEFAULT_LLM_PROVIDER` / `DEFAULT_TTS_PROVIDER`) via `PUT /me/keys`; users
 without one are skipped.
 
+## Docker
+
+Run the whole stack (Postgres + API) locally:
+
+```bash
+# .env must have KEY_ENCRYPTION_KEY and JWT_SECRET set
+docker compose up --build
+# API on http://localhost:8000 ; migrations run automatically on boot
+```
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR:
+1. applies migrations against a real Postgres service (proves the schema is
+   valid on Postgres, not just the SQLite the tests use), then
+2. runs `pytest` (hermetic — conftest points tests at a throwaway SQLite file).
+
 ## Design rule
 
 If you're about to `import openai` / `boto3` / `supabase` anywhere outside

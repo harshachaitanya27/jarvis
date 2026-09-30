@@ -28,3 +28,4 @@ apscheduler==3.11.0
 
 # ── Dev / test ────────────────────────────────────────────────────
 pytest==8.3.4
+aiosqlite==0.20.0        # SQLite async driver — hermetic test DB
