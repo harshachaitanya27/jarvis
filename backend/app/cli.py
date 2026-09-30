@@ -23,35 +23,43 @@ from app.domain.entities import User
 from app.services.crypto import KeyVault
 from app.services.jobs import GenerationJobRunner, generate_for_user
 from app.services.users import UserService
+from app.tracing import get_tracer
 
 log = logging.getLogger(__name__)
+tracer = get_tracer(__name__)
 
 
 async def _generate(users: list[User]) -> None:
     settings = get_settings()
     log.info("generation batch starting for %d user(s)", len(users))
     produced_total = skipped = 0
-    async with SessionFactory() as session:
-        user_repo = SqlUserRepository(session)
-        runner = GenerationJobRunner(
-            SqlEpisodeRepository(session),
-            SqlTranscriptRepository(session),
-            build_storage(settings),
-        )
-        user_service = UserService(user_repo, KeyVault())
+    with tracer.start_as_current_span("jobs.batch") as span:
+        span.set_attribute("users.total", len(users))
+        async with SessionFactory() as session:
+            user_repo = SqlUserRepository(session)
+            runner = GenerationJobRunner(
+                SqlEpisodeRepository(session),
+                SqlTranscriptRepository(session),
+                build_storage(settings),
+            )
+            user_service = UserService(user_repo, KeyVault())
 
-        for user in users:
-            try:
-                episodes = await generate_for_user(
-                    user, runner=runner, user_service=user_service, settings=settings
-                )
-                produced_total += len(episodes)
-                print(f"user {user.id}: generated {len(episodes)} episode(s)")
-            except KeyError as exc:
-                skipped += 1
-                log.warning("user %s skipped: missing provider key %s", user.id, exc)
-                print(f"user {user.id}: skipped — missing provider key {exc}")
-        await session.commit()
+            for user in users:
+                try:
+                    episodes = await generate_for_user(
+                        user, runner=runner, user_service=user_service, settings=settings
+                    )
+                    produced_total += len(episodes)
+                    print(f"user {user.id}: generated {len(episodes)} episode(s)")
+                except KeyError as exc:
+                    skipped += 1
+                    log.warning(
+                        "user %s skipped: missing provider key %s", user.id, exc
+                    )
+                    print(f"user {user.id}: skipped — missing provider key {exc}")
+            await session.commit()
+        span.set_attribute("episodes.produced", produced_total)
+        span.set_attribute("users.skipped", skipped)
     log.info(
         "generation batch done: %d episode(s) across %d user(s), %d skipped",
         produced_total,
