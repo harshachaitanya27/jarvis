@@ -6,6 +6,9 @@ LLM/TTS/STT models all sit behind interfaces. Vendors (Supabase, S3, OpenAI…)
 are chosen by env var and implemented in one adapter each — nothing else in the
 code imports a vendor SDK.
 
+> **In-depth architecture:** see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for
+> the layering, request/generation lifecycles, data model, and extension recipes.
+
 ## Layout
 
 ```
