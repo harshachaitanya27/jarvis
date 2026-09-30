@@ -9,11 +9,20 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.db.repositories import SqlUserRepository
+from app.adapters.db.repositories import (
+    SqlEpisodeRepository,
+    SqlTranscriptRepository,
+    SqlUserRepository,
+)
 from app.adapters.db.session import get_session
 from app.core.interfaces.auth import AuthError, AuthProvider, Principal
-from app.core.interfaces.database import UserRepository
-from app.core.providers import build_auth
+from app.core.interfaces.database import (
+    EpisodeRepository,
+    TranscriptRepository,
+    UserRepository,
+)
+from app.core.interfaces.storage import StorageProvider
+from app.core.providers import build_auth, build_storage
 from app.domain.entities import User
 from app.services.auth import AuthService
 from app.services.crypto import KeyVault
@@ -24,6 +33,22 @@ _bearer = HTTPBearer(auto_error=True)
 
 def get_user_repo(session: AsyncSession = Depends(get_session)) -> UserRepository:
     return SqlUserRepository(session)
+
+
+def get_episode_repo(
+    session: AsyncSession = Depends(get_session),
+) -> EpisodeRepository:
+    return SqlEpisodeRepository(session)
+
+
+def get_transcript_repo(
+    session: AsyncSession = Depends(get_session),
+) -> TranscriptRepository:
+    return SqlTranscriptRepository(session)
+
+
+def get_storage() -> StorageProvider:
+    return build_storage()
 
 
 def get_auth_provider() -> AuthProvider:

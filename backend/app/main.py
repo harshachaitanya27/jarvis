@@ -7,7 +7,7 @@ filesystem. Feature routers are mounted as they are built.
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, users
+from app.api import auth, episodes, users
 from app.config import get_settings
 
 settings = get_settings()
@@ -22,6 +22,7 @@ async def health() -> dict:
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(episodes.router)
 
 
 # In local mode, serve generated episodes so the app can play them back.
