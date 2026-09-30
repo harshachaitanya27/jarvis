@@ -31,6 +31,9 @@ class UserRepository(ABC):
     @abstractmethod
     async def update(self, user: User) -> User: ...
 
+    @abstractmethod
+    async def list_all(self, limit: int = 1000) -> list[User]: ...
+
 
 class EpisodeRepository(ABC):
     @abstractmethod
