@@ -23,6 +23,7 @@ httpx==0.28.1
 apscheduler==3.11.0
 
 # ── Observability (OpenTelemetry: logs, traces, metrics) ─────────
+# opentelemetry-sdk pulls in opentelemetry-api, which app/tracing.py uses for spans.
 opentelemetry-sdk==1.45.0
 opentelemetry-exporter-otlp-proto-http==1.45.0
 opentelemetry-instrumentation-fastapi==0.66b0
