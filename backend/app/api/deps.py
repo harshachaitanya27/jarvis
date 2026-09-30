@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.db.repositories import (
     SqlEpisodeRepository,
+    SqlFeedbackRepository,
     SqlTranscriptRepository,
     SqlUserRepository,
 )
@@ -18,6 +19,7 @@ from app.adapters.db.session import get_session
 from app.core.interfaces.auth import AuthError, AuthProvider, Principal
 from app.core.interfaces.database import (
     EpisodeRepository,
+    FeedbackRepository,
     TranscriptRepository,
     UserRepository,
 )
@@ -45,6 +47,12 @@ def get_transcript_repo(
     session: AsyncSession = Depends(get_session),
 ) -> TranscriptRepository:
     return SqlTranscriptRepository(session)
+
+
+def get_feedback_repo(
+    session: AsyncSession = Depends(get_session),
+) -> FeedbackRepository:
+    return SqlFeedbackRepository(session)
 
 
 def get_storage() -> StorageProvider:
