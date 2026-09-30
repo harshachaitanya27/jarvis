@@ -7,6 +7,7 @@ this stays unit-testable with fakes and swappable in production.
 """
 
 import logging
+import time
 
 from app.core.interfaces.database import EpisodeRepository, TranscriptRepository
 from app.core.interfaces.llm import (
@@ -56,15 +57,26 @@ class GenerationService:
         On any failure the episode is marked FAILED with the reason and the
         exception re-raised so a job runner can record it.
         """
+        started = time.perf_counter()
+        log.info(
+            "generating episode %s (user=%s, fmt=%s, topics=%s)",
+            episode.id,
+            episode.user_id,
+            fmt,
+            episode.topics,
+        )
         try:
             await self.episodes.set_status(episode.id, EpisodeStatus.RESEARCHING)
+            log.debug("researching %d topic(s) for %s", len(episode.topics), episode.id)
             brief = await self._research(llm, episode.topics)
 
             await self.episodes.set_status(episode.id, EpisodeStatus.SCRIPTING)
+            log.debug("scripting %s (~%d min)", episode.id, target_minutes)
             script = await llm.generate_script(brief, fmt, target_minutes)
             await self.episodes.set_title(episode.id, script.title)
 
             await self.episodes.set_status(episode.id, EpisodeStatus.VOICING)
+            log.debug("voicing %d segment(s) for %s", len(script.segments), episode.id)
             results = []
             for seg in script.segments:
                 voice = self._voice_for(seg.speaker, voices)
@@ -87,10 +99,22 @@ class GenerationService:
             episode.audio_key = key
             episode.duration_seconds = duration
             episode.status = EpisodeStatus.READY
+            log.info(
+                "episode %s ready: %r (%.1fs audio, %d segments) in %.1fs",
+                episode.id,
+                script.title,
+                duration,
+                len(script.segments),
+                time.perf_counter() - started,
+            )
             return episode
 
         except Exception as exc:  # noqa: BLE001 - record then re-raise
-            log.exception("generation failed for episode %s", episode.id)
+            log.exception(
+                "generation failed for episode %s after %.1fs",
+                episode.id,
+                time.perf_counter() - started,
+            )
             await self.episodes.set_status(
                 episode.id, EpisodeStatus.FAILED, error=str(exc)
             )
