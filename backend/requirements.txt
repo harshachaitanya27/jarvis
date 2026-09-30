@@ -1,0 +1,22 @@
+# ── Web framework ─────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# ── Config ────────────────────────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# ── Database (vendor-agnostic: SQLAlchemy speaks a URL) ───────────
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0          # Postgres driver; swap for another engine via URL
+alembic==1.14.0          # schema migrations
+
+# ── Secrets ───────────────────────────────────────────────────────
+cryptography==44.0.0     # Fernet encryption for user BYO keys
+
+# ── HTTP client for provider adapters ────────────────────────────
+httpx==0.28.1
+
+# ── Optional adapters (uncomment when that adapter is used) ───────
+# boto3==1.35.90         # storage: s3 / r2 / minio / supabase-s3
+# supabase==2.11.0       # storage/auth: supabase adapter only
