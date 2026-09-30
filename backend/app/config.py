@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # App
     app_env: Literal["development", "staging", "production"] = "development"
     log_level: str = "INFO"
+    log_format: Literal["text", "json"] = "text"  # json for production aggregation
 
     # Database — a URL, so any Postgres-compatible host works unchanged
     database_url: str = Field(
@@ -45,6 +46,13 @@ class Settings(BaseSettings):
     jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 60 * 24 * 7  # 7 days
+
+    # Observability — OpenTelemetry (logs, traces, metrics)
+    service_name: str = "jarvis-backend"
+    service_version: str = "0.1.0"
+    otel_enabled: bool = False  # off by default so local dev needs no collector
+    otel_exporter_otlp_endpoint: str = "http://localhost:4318"  # OTLP/HTTP base
+    otel_console_export: bool = False  # print signals to stdout instead of OTLP
 
     # Generation defaults (a user's stored config may override these)
     default_llm_provider: str = "openai"

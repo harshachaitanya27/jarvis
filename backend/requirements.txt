@@ -22,6 +22,14 @@ httpx==0.28.1
 # ── Scheduling (nightly generation batch) ────────────────────────
 apscheduler==3.11.0
 
+# ── Observability (OpenTelemetry: logs, traces, metrics) ─────────
+opentelemetry-sdk==1.45.0
+opentelemetry-exporter-otlp-proto-http==1.45.0
+opentelemetry-instrumentation-fastapi==0.66b0
+opentelemetry-instrumentation-sqlalchemy==0.66b0
+opentelemetry-instrumentation-httpx==0.66b0
+opentelemetry-instrumentation-logging==0.66b0
+
 # ── Optional adapters (uncomment when that adapter is used) ───────
 # boto3==1.35.90         # storage: s3 / r2 / minio / supabase-s3
 # supabase==2.11.0       # storage/auth: supabase adapter only
