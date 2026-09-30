@@ -29,6 +29,8 @@ log = logging.getLogger(__name__)
 
 async def _generate(users: list[User]) -> None:
     settings = get_settings()
+    log.info("generation batch starting for %d user(s)", len(users))
+    produced_total = skipped = 0
     async with SessionFactory() as session:
         user_repo = SqlUserRepository(session)
         runner = GenerationJobRunner(
@@ -43,10 +45,19 @@ async def _generate(users: list[User]) -> None:
                 episodes = await generate_for_user(
                     user, runner=runner, user_service=user_service, settings=settings
                 )
+                produced_total += len(episodes)
                 print(f"user {user.id}: generated {len(episodes)} episode(s)")
             except KeyError as exc:
+                skipped += 1
+                log.warning("user %s skipped: missing provider key %s", user.id, exc)
                 print(f"user {user.id}: skipped — missing provider key {exc}")
         await session.commit()
+    log.info(
+        "generation batch done: %d episode(s) across %d user(s), %d skipped",
+        produced_total,
+        len(users),
+        skipped,
+    )
 
 
 async def run_for_all() -> None:
@@ -59,6 +70,7 @@ async def run_for_user_id(user_id: str) -> None:
     async with SessionFactory() as session:
         user = await SqlUserRepository(session).get(user_id)
     if user is None:
+        log.warning("no such user: %s", user_id)
         print(f"no such user: {user_id}")
         return
     await _generate([user])

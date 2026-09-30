@@ -60,8 +60,10 @@ class GenerationJobRunner:
         minutes: int = 10,
     ) -> list[Episode]:
         """Create and generate this user's episodes; skip failures individually."""
+        topic_sets = select_episode_topics(user, count)
+        log.info("generating %d episode(s) for user %s", len(topic_sets), user.id)
         produced: list[Episode] = []
-        for topics in select_episode_topics(user, count):
+        for topics in topic_sets:
             episode = await self.episodes.create(
                 Episode(id="", user_id=user.id, topics=topics)
             )
@@ -70,6 +72,9 @@ class GenerationJobRunner:
                 produced.append(episode)
             except Exception:  # noqa: BLE001 - one bad episode shouldn't stop the batch
                 log.exception("episode %s failed for user %s", episode.id, user.id)
+        log.info(
+            "user %s: %d/%d episode(s) produced", user.id, len(produced), len(topic_sets)
+        )
         return produced
 
 
@@ -91,6 +96,12 @@ async def generate_for_user(
     provider (caller decides whether to skip them).
     """
     s = settings or get_settings()
+    log.debug(
+        "building providers for user %s (llm=%s, tts=%s)",
+        user.id,
+        s.default_llm_provider,
+        s.default_tts_provider,
+    )
     llm = build_llm(s.default_llm_provider, user_service.decrypt_key(user, s.default_llm_provider))
     tts = build_tts(s.default_tts_provider, user_service.decrypt_key(user, s.default_tts_provider))
     return await runner.run_for_user(

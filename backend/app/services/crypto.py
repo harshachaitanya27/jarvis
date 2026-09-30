@@ -5,9 +5,13 @@ generation run needs to call a provider. The Fernet secret comes from
 KEY_ENCRYPTION_KEY and never leaves the server.
 """
 
+import logging
+
 from cryptography.fernet import Fernet, InvalidToken
 
 from app.config import get_settings
+
+log = logging.getLogger(__name__)
 
 
 class KeyVault:
@@ -26,6 +30,8 @@ class KeyVault:
         try:
             return self._fernet.decrypt(token.encode()).decode()
         except InvalidToken as exc:
+            # Wrong/rotated KEY_ENCRYPTION_KEY or corrupted ciphertext.
+            log.error("failed to decrypt a provider key (invalid token)")
             raise ValueError("could not decrypt provider key") from exc
 
     @staticmethod

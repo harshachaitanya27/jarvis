@@ -4,6 +4,7 @@ Owns password hashing (bcrypt) and JWT creation. Verification of incoming
 tokens is the JWTAuthProvider's job; this is the write side of auth.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -12,6 +13,8 @@ import jwt
 from app.config import Settings, get_settings
 from app.core.interfaces.database import UserRepository
 from app.domain.entities import User
+
+log = logging.getLogger(__name__)
 
 
 class EmailTaken(Exception):
@@ -51,6 +54,7 @@ class AuthService:
         self, email: str, password: str, topics: list[str] | None = None
     ) -> tuple[User, str]:
         if await self.users.get_by_email(email):
+            log.info("signup rejected: email already registered (%s)", email)
             raise EmailTaken(email)
         user = await self.users.create(
             User(
@@ -61,12 +65,16 @@ class AuthService:
             )
         )
         token = self.create_access_token(user.id, user.email)
+        log.info("new user registered: %s (%s)", user.id, email)
         return user, token
 
     async def login(self, email: str, password: str) -> str:
         user = await self.users.get_by_email(email)
         if user is None or not user.password_hash:
+            log.warning("login failed: no such account (%s)", email)
             raise InvalidCredentials()
         if not verify_password(password, user.password_hash):
+            log.warning("login failed: wrong password for %s", user.id)
             raise InvalidCredentials()
+        log.info("user logged in: %s", user.id)
         return self.create_access_token(user.id, user.email)
