@@ -57,6 +57,21 @@ uvicorn app.main:app --reload
 # http://localhost:8000/docs
 ```
 
+## Generate episodes
+
+Generation runs on the backend (never the phone). Trigger it manually or on a
+nightly schedule; both use the same job runner.
+
+```bash
+python -m app.cli --user <user_id>   # one user, now
+python -m app.cli --all              # every user (the nightly batch)
+python -m app.services.scheduler     # long-lived process; runs --all at 04:00
+```
+
+A user must have stored a BYO key for the configured default provider
+(`DEFAULT_LLM_PROVIDER` / `DEFAULT_TTS_PROVIDER`) via `PUT /me/keys`; users
+without one are skipped.
+
 ## Design rule
 
 If you're about to `import openai` / `boto3` / `supabase` anywhere outside

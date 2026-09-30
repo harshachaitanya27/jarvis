@@ -89,6 +89,12 @@ class SqlUserRepository(UserRepository):
         await self.s.flush()
         return _user(row)
 
+    async def list_all(self, limit: int = 1000) -> list[User]:
+        rows = (
+            await self.s.execute(select(m.UserRow).limit(limit))
+        ).scalars()
+        return [_user(r) for r in rows]
+
     async def update(self, user: User) -> User:
         row = await self.s.get(m.UserRow, user.id)
         if row is None:

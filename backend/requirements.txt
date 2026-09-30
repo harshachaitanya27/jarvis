@@ -19,6 +19,9 @@ bcrypt==4.2.1            # password hashing
 # ── HTTP client for provider adapters ────────────────────────────
 httpx==0.28.1
 
+# ── Scheduling (nightly generation batch) ────────────────────────
+apscheduler==3.11.0
+
 # ── Optional adapters (uncomment when that adapter is used) ───────
 # boto3==1.35.90         # storage: s3 / r2 / minio / supabase-s3
 # supabase==2.11.0       # storage/auth: supabase adapter only
