@@ -25,6 +25,7 @@ class UserRow(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     email: Mapped[str | None] = mapped_column(String, unique=True, index=True)
+    password_hash: Mapped[str | None] = mapped_column(String)
     onboarding_topics: Mapped[list] = mapped_column(JSON, default=list)
     provider_keys_encrypted: Mapped[dict] = mapped_column(JSON, default=dict)
     daily_question_quota: Mapped[int] = mapped_column(Integer, default=3)

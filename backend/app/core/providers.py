@@ -6,6 +6,7 @@ leak into business logic.
 """
 
 from app.config import Settings, get_settings
+from app.core.interfaces.auth import AuthProvider
 from app.core.interfaces.llm import LLMProvider
 from app.core.interfaces.storage import StorageProvider
 from app.core.interfaces.tts import TTSProvider
@@ -54,4 +55,17 @@ def build_tts(provider: str, api_key: str, model: str | None = None) -> TTSProvi
             raise ValueError(f"unknown tts provider: {other!r}")
 
 
-# STT / Auth factories follow the same shape as their adapters land.
+def build_auth(settings: Settings | None = None) -> AuthProvider:
+    s = settings or get_settings()
+    match s.auth_provider:
+        case "jwt" | "local":
+            from app.adapters.auth.jwt import JWTAuthProvider
+
+            return JWTAuthProvider(s.jwt_secret, s.jwt_algorithm)
+        case "supabase":
+            raise NotImplementedError("supabase auth adapter not implemented yet")
+        case other:
+            raise ValueError(f"unknown auth_provider: {other!r}")
+
+
+# STT factory follows the same shape as its adapter lands.

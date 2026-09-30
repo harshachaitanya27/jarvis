@@ -37,6 +37,8 @@ class SignalSource(str, Enum):
 class User:
     id: str
     email: str | None = None
+    # bcrypt hash; never a plaintext password. None for non-password identities.
+    password_hash: str | None = None
     onboarding_topics: list[str] = field(default_factory=list)
     # BYO provider keys, stored ENCRYPTED at rest (Fernet). Never plaintext here.
     provider_keys_encrypted: dict[str, str] = field(default_factory=dict)
