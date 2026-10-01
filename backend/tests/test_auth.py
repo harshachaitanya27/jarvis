@@ -56,3 +56,20 @@ def test_bad_and_missing_tokens_rejected():
 def test_short_password_rejected():
     r = client.post("/auth/signup", json={"email": "x@y.com", "password": "short"})
     assert r.status_code == 422  # pydantic min_length
+
+
+def test_empty_provider_key_rejected():
+    r = client.post(
+        "/auth/signup", json={"email": "emptykey@example.com", "password": "password123"}
+    )
+    auth = {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+    # empty, whitespace-only, and no-keys are all rejected with 422
+    assert client.put("/me/keys", headers=auth, json={"keys": {"openai": ""}}).status_code == 422
+    assert client.put("/me/keys", headers=auth, json={"keys": {"openai": "   "}}).status_code == 422
+    assert client.put("/me/keys", headers=auth, json={"keys": {}}).status_code == 422
+
+    # a real key still works
+    ok = client.put("/me/keys", headers=auth, json={"keys": {"openai": "sk-real"}})
+    assert ok.status_code == 200
+    assert ok.json()["configured_providers"] == ["openai"]

@@ -23,6 +23,11 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
+# Local SQLite databases (dev/test)
+*.db
+*.sqlite
+*.sqlite3
+
 # Local audio artifacts (generated episodes)
 media/
 *.mp3

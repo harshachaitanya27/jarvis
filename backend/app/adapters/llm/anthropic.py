@@ -9,6 +9,7 @@ import json
 
 import httpx
 
+from app.adapters.errors import raise_for_provider
 from app.core.interfaces.llm import (
     EpisodeFormat,
     LLMProvider,
@@ -53,11 +54,11 @@ class AnthropicLLMProvider(LLMProvider):
         }
         if self._client is not None:
             resp = await self._client.post(_API, headers=headers, json=payload)
-            resp.raise_for_status()
+            raise_for_provider(resp, "Anthropic")
             return resp.json()
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(_API, headers=headers, json=payload)
-            resp.raise_for_status()
+            raise_for_provider(resp, "Anthropic")
             return resp.json()
 
     async def _message(self, system: str, user: str, max_tokens: int) -> str:

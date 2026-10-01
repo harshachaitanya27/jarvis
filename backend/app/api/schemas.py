@@ -7,7 +7,7 @@ provider keys.
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.domain.entities import FeedbackType
 
@@ -35,6 +35,18 @@ class TopicsRequest(BaseModel):
 class ProviderKeysRequest(BaseModel):
     # {"openai": "sk-...", "elevenlabs": "..."} — plaintext in, encrypted at rest.
     keys: dict[str, str]
+
+    @field_validator("keys")
+    @classmethod
+    def _non_empty(cls, v: dict[str, str]) -> dict[str, str]:
+        if not v:
+            raise ValueError("at least one provider key is required")
+        for provider, key in v.items():
+            if not provider.strip():
+                raise ValueError("provider name cannot be empty")
+            if not key or not key.strip():
+                raise ValueError(f"key for provider '{provider}' cannot be empty")
+        return v
 
 
 class UserProfile(BaseModel):

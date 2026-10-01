@@ -17,6 +17,8 @@ os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{_db_path}"
 os.environ["KEY_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 os.environ["JWT_SECRET"] = "test-secret-not-for-production"
 os.environ["AUTH_PROVIDER"] = "jwt"
+# Keep tests hermetic regardless of a developer's local .env.
+os.environ["OTEL_ENABLED"] = "false"
 
 import pytest  # noqa: E402
 
