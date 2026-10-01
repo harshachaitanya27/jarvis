@@ -344,6 +344,12 @@ library API's `audio_url` works identically across backends.
   spans), and httpx (provider-call spans). `LoggingInstrumentor` stamps
   `trace_id`/`span_id` onto log records, so a JSON log line correlates to its
   trace.
+- **Hand-written spans** (`app/tracing.py::get_tracer`) wrap the background
+  generation pipeline — `generation.run` with a child span per phase
+  (research/script/voice/assemble), nested under `jobs.run_for_user`/`jobs.batch`.
+  These exist because the pipeline runs as a job, *outside* any HTTP request, so
+  the FastAPI instrumentation doesn't reach it. The tracer is a no-op when OTel is
+  off, so the spans cost nothing in dev and tests.
 
 Disabled by default, so local dev and tests need no collector. Point
 `OTEL_EXPORTER_OTLP_ENDPOINT` at any OTLP/HTTP collector (Grafana Alloy, the
