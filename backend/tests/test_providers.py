@@ -8,9 +8,13 @@ import asyncio
 import json
 
 import httpx
+import pytest
 
+from app.adapters.errors import ProviderError
 from app.adapters.llm.anthropic import AnthropicLLMProvider
+from app.adapters.llm.openai import OpenAILLMProvider
 from app.adapters.tts.elevenlabs import ElevenLabsTTSProvider
+from app.adapters.tts.openai import OpenAITTSProvider
 from app.core.interfaces.llm import ResearchBrief
 
 
@@ -123,3 +127,40 @@ def test_elevenlabs_voices_lists_ids():
 
     tts = ElevenLabsTTSProvider("xi-test", client=_client(handler))
     assert asyncio.run(tts.voices()) == ["v1", "v2"]
+
+
+# ── error-body surfacing ──────────────────────────────────────────
+
+
+def test_openai_llm_surfaces_provider_error_body():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            429,
+            json={"error": {"message": "exceeded quota", "code": "insufficient_quota"}},
+        )
+
+    llm = OpenAILLMProvider("sk-test", client=_client(handler))
+    with pytest.raises(ProviderError) as exc:
+        asyncio.run(llm.research("x"))
+    msg = str(exc.value)
+    assert "OpenAI" in msg and "429" in msg and "insufficient_quota" in msg
+
+
+def test_openai_tts_surfaces_provider_error_body():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, text="Incorrect API key provided")
+
+    tts = OpenAITTSProvider("sk-test", client=_client(handler))
+    with pytest.raises(ProviderError) as exc:
+        asyncio.run(tts.synthesize("hi", "alloy"))
+    assert "OpenAI" in str(exc.value) and "401" in str(exc.value)
+
+
+def test_elevenlabs_surfaces_provider_error_body():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(422, text="voice not found")
+
+    tts = ElevenLabsTTSProvider("xi-test", client=_client(handler))
+    with pytest.raises(ProviderError) as exc:
+        asyncio.run(tts.synthesize("hi", "bad-voice"))
+    assert "ElevenLabs" in str(exc.value) and "422" in str(exc.value)

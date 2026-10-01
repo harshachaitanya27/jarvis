@@ -8,6 +8,7 @@ import json
 
 import httpx
 
+from app.adapters.errors import raise_for_provider
 from app.core.interfaces.llm import (
     EpisodeFormat,
     LLMProvider,
@@ -20,23 +21,32 @@ _API = "https://api.openai.com/v1/chat/completions"
 
 
 class OpenAILLMProvider(LLMProvider):
-    def __init__(self, api_key: str, model: str = "gpt-4o-mini", timeout: float = 60.0):
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gpt-4o-mini",
+        timeout: float = 60.0,
+        client: httpx.AsyncClient | None = None,
+    ):
         self._key = api_key
         self._model = model
         self._timeout = timeout
+        self._client = client
 
     async def _chat(self, messages: list[dict], json_mode: bool = False) -> str:
         payload: dict = {"model": self._model, "messages": messages}
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            resp = await client.post(
-                _API,
-                headers={"Authorization": f"Bearer {self._key}"},
-                json=payload,
-            )
-            resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+        headers = {"Authorization": f"Bearer {self._key}"}
+        if self._client is not None:
+            resp = await self._client.post(_API, headers=headers, json=payload)
+        else:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                resp = await client.post(_API, headers=headers, json=payload)
+                raise_for_provider(resp, "OpenAI")
+                return resp.json()["choices"][0]["message"]["content"]
+        raise_for_provider(resp, "OpenAI")
+        return resp.json()["choices"][0]["message"]["content"]
 
     async def research(self, topic: str) -> ResearchBrief:
         content = await self._chat(

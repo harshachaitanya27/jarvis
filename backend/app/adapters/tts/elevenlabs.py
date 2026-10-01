@@ -6,6 +6,7 @@ an ElevenLabs voice id; an httpx client can be injected for offline testing.
 
 import httpx
 
+from app.adapters.errors import raise_for_provider
 from app.core.interfaces.tts import SynthesisResult, TTSProvider
 
 _BASE = "https://api.elevenlabs.io/v1"
@@ -33,11 +34,11 @@ class ElevenLabsTTSProvider(TTSProvider):
         payload = {"text": text, "model_id": self._model}
         if self._client is not None:
             resp = await self._client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
+            raise_for_provider(resp, "ElevenLabs")
             return SynthesisResult(audio=resp.content, content_type="audio/mpeg")
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
+            raise_for_provider(resp, "ElevenLabs")
             return SynthesisResult(audio=resp.content, content_type="audio/mpeg")
 
     async def voices(self) -> list[str]:
@@ -45,11 +46,11 @@ class ElevenLabsTTSProvider(TTSProvider):
         headers = {"xi-api-key": self._key}
         if self._client is not None:
             resp = await self._client.get(url, headers=headers)
-            resp.raise_for_status()
+            raise_for_provider(resp, "ElevenLabs")
             data = resp.json()
         else:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 resp = await client.get(url, headers=headers)
-                resp.raise_for_status()
+                raise_for_provider(resp, "ElevenLabs")
                 data = resp.json()
         return [v["voice_id"] for v in data.get("voices", [])]
