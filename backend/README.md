@@ -85,6 +85,24 @@ docker compose up --build
 # API on http://localhost:8000 ; migrations run automatically on boot
 ```
 
+## View telemetry locally (LGTM)
+
+An optional all-in-one observability backend — **L**oki (logs), **G**rafana
+(dashboards), **T**empo (traces), **M**imir (metrics) — ships as a compose
+profile. It accepts OTLP on `4318` and serves Grafana on `3000`.
+
+```bash
+# bring up Postgres + API + the LGTM stack
+OTEL_ENABLED=true docker compose --profile observability up --build
+# open Grafana at http://localhost:3000 (anonymous admin — no login)
+```
+
+Running the API on the host instead of in Docker? Start just the backend
+(`docker compose --profile observability up otel-lgtm`), then run `uvicorn` with
+`OTEL_ENABLED=true` (the default `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`
+already points at it). A generation run then shows up as a trace:
+`jobs.batch → jobs.run_for_user → generation.run → {research, script, voice, assemble}`.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR:
