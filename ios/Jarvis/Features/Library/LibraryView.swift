@@ -1,30 +1,33 @@
 import SwiftUI
 
-/// Placeholder for the episode library — filled in by the next PR.
+/// Placeholder for the episode library — the list + player come in the next PR.
 struct LibraryView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 16) {
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.tint)
-                Text("You're all set")
-                    .font(.title2.bold())
-                Text("Episodes generated from your topics will appear here.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Eyebrow("Library")
+                Spacer()
+                QuietButton(title: "Sign out") { model.signOut() }
             }
-            .padding()
-            .navigationTitle("Library")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Sign out") { model.signOut() }
-                }
+            .padding(.horizontal, Theme.Space.lg)
+            .padding(.top, Theme.Space.lg)
+
+            Spacer()
+
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                DisplayTitle("No episodes\nyet", size: 36)
+                Text("Episodes generated from your topics will appear here each morning.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.horizontal, Theme.Space.lg)
+
+            Spacer()
+            Spacer()
         }
+        .screen()
     }
 }
