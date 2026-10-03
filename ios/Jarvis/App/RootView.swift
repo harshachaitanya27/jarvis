@@ -12,6 +12,8 @@ struct RootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .screen()
                 .task { await model.refresh() }
+        case .topics:
+            TopicsView()
         case .setup:
             SetupView()
         case .ready:

@@ -8,7 +8,6 @@ struct AuthView: View {
     @State private var mode: Mode = .signUp
     @State private var email = ""
     @State private var password = ""
-    @State private var topics = ""
     @State private var error: String?
     @State private var working = false
 
@@ -81,13 +80,6 @@ struct AuthView: View {
             SecureField("Password (8+ characters)", text: $password)
                 .textContentType(mode == .signUp ? .newPassword : .password)
                 .underlinedField()
-
-            if mode == .signUp {
-                TextField("Topics — comma separated", text: $topics)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .underlinedField()
-            }
         }
     }
 
@@ -99,12 +91,8 @@ struct AuthView: View {
                 let token: String
                 switch mode {
                 case .signUp:
-                    let list = topics
-                        .split(separator: ",")
-                        .map { $0.trimmingCharacters(in: .whitespaces) }
-                        .filter { !$0.isEmpty }
                     token = try await APIClient.shared
-                        .signup(email: email, password: password, topics: list)
+                        .signup(email: email, password: password, topics: [])
                         .accessToken
                 case .logIn:
                     token = try await APIClient.shared
