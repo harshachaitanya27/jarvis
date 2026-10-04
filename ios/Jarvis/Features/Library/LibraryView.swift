@@ -119,6 +119,9 @@ private struct EpisodeRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: Theme.Space.sm) {
+                if isGenerating {
+                    ProgressView().controlSize(.small).tint(Theme.accent)
+                }
                 Eyebrow(statusLabel, color: statusColor)
                 if episode.isReady, let duration = episode.durationSeconds {
                     Eyebrow("· \(Int(duration / 60)) min")
@@ -128,13 +131,25 @@ private struct EpisodeRow: View {
         .padding(.vertical, Theme.Space.lg)
     }
 
+    private var isGenerating: Bool { !episode.isReady && !episode.isFailed }
+
+    /// Mirror the backend's generation phases so the row tracks real progress.
     private var statusLabel: String {
-        if episode.isReady { return "Ready" }
-        if episode.isFailed { return "Failed" }
-        return "Generating"
+        switch episode.status {
+        case "queued": return "Queued"
+        case "researching": return "Researching"
+        case "scripting": return "Writing script"
+        case "voicing": return "Voicing"
+        case "assembling": return "Assembling"
+        case "ready": return "Ready"
+        case "failed": return "Failed"
+        default: return episode.status.capitalized
+        }
     }
 
     private var statusColor: Color {
-        episode.isFailed ? Theme.danger : Theme.muted
+        if episode.isFailed { return Theme.danger }
+        if isGenerating { return Theme.accent }  // active state earns the accent
+        return Theme.muted
     }
 }
