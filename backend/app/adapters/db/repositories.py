@@ -148,7 +148,12 @@ class SqlEpisodeRepository(EpisodeRepository):
             raise KeyError(episode_id)
         row.status = status.value
         row.error = error
-        await self.s.flush()
+        # Commit each transition as a durable checkpoint: generation runs for a
+        # minute inside one job session, and the status change is only useful if
+        # other sessions (the library endpoint the app polls) can see it. Flush
+        # alone keeps it trapped in this transaction until the whole run commits,
+        # so the UI would jump straight from nothing to Ready.
+        await self.s.commit()
 
     async def set_title(self, episode_id: str, title: str) -> None:
         row = await self.s.get(m.EpisodeRow, episode_id)
