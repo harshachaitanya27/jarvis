@@ -4,11 +4,14 @@ All scoped to the authenticated user — an episode belonging to someone else is
 indistinguishable from one that does not exist (404).
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from collections.abc import Awaitable, Callable
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from app.api.deps import (
     get_current_user,
     get_episode_repo,
+    get_generate_task,
     get_storage,
     get_transcript_repo,
 )
@@ -17,11 +20,34 @@ from app.api.schemas import (
     TranscriptResponse,
     TranscriptSegmentModel,
 )
+from app.config import get_settings
 from app.core.interfaces.database import EpisodeRepository, TranscriptRepository
 from app.core.interfaces.storage import StorageProvider
 from app.domain.entities import Episode, EpisodeStatus, User
 
 router = APIRouter(prefix="/me/episodes", tags=["episodes"])
+
+
+@router.post("/generate", status_code=status.HTTP_202_ACCEPTED)
+async def generate_now(
+    background: BackgroundTasks,
+    user: User = Depends(get_current_user),
+    generate: Callable[[str], Awaitable[None]] = Depends(get_generate_task),
+) -> dict:
+    """Kick off a generation run for the signed-in user in the background.
+
+    Returns immediately (202); the episodes appear via the library list as they
+    move through queued -> ready. A convenience path (first run / ad-hoc) — the
+    nightly scheduler remains the primary way episodes are produced.
+    """
+    provider = get_settings().default_llm_provider
+    if not user.provider_keys_encrypted.get(provider):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"no {provider} key configured; add one first",
+        )
+    background.add_task(generate, user.id)
+    return {"status": "started"}
 
 
 async def _summary(episode: Episode, storage: StorageProvider) -> EpisodeSummary:

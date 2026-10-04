@@ -59,6 +59,14 @@ def get_storage() -> StorageProvider:
     return build_storage()
 
 
+def get_generate_task():
+    """The background generation entrypoint. Injected so tests can override it
+    instead of running the real pipeline."""
+    from app.services.jobs import generate_for_user_id
+
+    return generate_for_user_id
+
+
 def get_auth_provider() -> AuthProvider:
     return build_auth()
 

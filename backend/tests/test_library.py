@@ -89,3 +89,28 @@ def test_library_lists_serves_and_isolates():
 def test_unknown_episode_is_404():
     auth = _signup("nobody@example.com")
     assert client.get("/me/episodes/does-not-exist", headers=auth).status_code == 404
+
+
+def test_generate_now_schedules_when_key_present():
+    from app.api import deps
+
+    auth = _signup("gen@example.com")
+    client.put("/me/keys", headers=auth, json={"keys": {"openai": "sk-test"}})
+
+    calls: list[str] = []
+
+    async def fake(user_id: str) -> None:
+        calls.append(user_id)
+
+    app.dependency_overrides[deps.get_generate_task] = lambda: fake
+    try:
+        r = client.post("/me/episodes/generate", headers=auth)
+        assert r.status_code == 202
+        assert len(calls) == 1  # background task ran, with no real pipeline
+    finally:
+        app.dependency_overrides.pop(deps.get_generate_task, None)
+
+
+def test_generate_now_requires_a_key():
+    auth = _signup("nokey-gen@example.com")
+    assert client.post("/me/episodes/generate", headers=auth).status_code == 400

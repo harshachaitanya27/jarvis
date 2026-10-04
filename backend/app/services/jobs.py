@@ -121,3 +121,38 @@ async def generate_for_user(
         fmt=fmt,
         minutes=minutes or s.default_episode_minutes,
     )
+
+
+async def generate_for_user_id(user_id: str) -> None:
+    """Load a user in a fresh session and run generation for them.
+
+    Self-contained (opens its own DB session + real adapters), so it can run as
+    a background task (the "generate now" endpoint) or from the CLI. Swallows a
+    missing-key error — the caller validates that separately.
+    """
+    from app.adapters.db.repositories import (
+        SqlEpisodeRepository,
+        SqlTranscriptRepository,
+        SqlUserRepository,
+    )
+    from app.adapters.db.session import SessionFactory
+    from app.core.providers import build_storage
+    from app.services.crypto import KeyVault
+
+    async with SessionFactory() as session:
+        users = SqlUserRepository(session)
+        user = await users.get(user_id)
+        if user is None:
+            log.warning("generate_for_user_id: no such user %s", user_id)
+            return
+        runner = GenerationJobRunner(
+            SqlEpisodeRepository(session),
+            SqlTranscriptRepository(session),
+            build_storage(),
+        )
+        user_service = UserService(users, KeyVault())
+        try:
+            await generate_for_user(user, runner=runner, user_service=user_service)
+        except KeyError as exc:
+            log.warning("generate_for_user_id: user %s skipped — %s", user_id, exc)
+        await session.commit()
