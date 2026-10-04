@@ -49,16 +49,35 @@ struct LibraryView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.md) {
-            Text("No episodes yet")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-            Text("Episodes generated from your topics will appear here. Pull to refresh.")
-                .font(.system(size: 15))
-                .foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: Theme.Space.lg) {
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                Text("No episodes yet")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("New episodes arrive automatically each morning. Want one now?")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            PrimaryButton(
+                title: "Generate my first episode",
+                loading: model.starting,
+                enabled: !model.starting
+            ) {
+                Task { await generateFirst() }
+            }
+
+            if let error = model.error {
+                Text(error).font(.system(size: 13)).foregroundStyle(Theme.danger)
+            }
         }
         .padding(.top, Theme.Space.xl)
+    }
+
+    private func generateFirst() async {
+        guard let token = app.token else { return }
+        await model.generateFirst(token: token)
     }
 
     private func load() async {

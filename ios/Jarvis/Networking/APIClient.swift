@@ -48,6 +48,11 @@ actor APIClient {
         try await request("me/episodes", method: "GET", token: token)
     }
 
+    /// Kick off a generation run for the signed-in user (returns 202).
+    func generateNow(token: String) async throws {
+        let _: EmptyResponse = try await request("me/episodes/generate", method: "POST", token: token)
+    }
+
     func logFeedback(episodeId: String, type: String, position: Double?, token: String) async throws {
         struct Body: Encodable {
             let type: String
