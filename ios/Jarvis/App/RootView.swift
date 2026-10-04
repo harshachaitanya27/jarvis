@@ -8,8 +8,12 @@ struct RootView: View {
         case .auth:
             AuthView()
         case .loading:
-            ProgressView("Loading…")
+            VStack { ProgressView().tint(Theme.ink) }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .screen()
                 .task { await model.refresh() }
+        case .topics:
+            TopicsView()
         case .setup:
             SetupView()
         case .ready:

@@ -12,44 +12,44 @@ struct SetupView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Text("Add your OpenAI API key so Jarvis can generate episodes. "
-                         + "It's encrypted on the server and never shown again.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Theme.Space.xl) {
+                VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                    Eyebrow("Step 2")
+                    DisplayTitle("Add your key", size: 40)
                 }
 
-                Section("OpenAI API Key") {
+                Text("Jarvis uses your OpenAI key to generate episodes. It's "
+                     + "encrypted on the server and never shown again.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: Theme.Space.md) {
+                    Eyebrow("OpenAI API Key")
                     SecureField("sk-…", text: $apiKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .underlinedField()
                 }
 
                 if let error {
-                    Text(error)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                    Text(error).font(.system(size: 13)).foregroundStyle(Theme.danger)
                 }
 
-                Section {
-                    Button(action: save) {
-                        HStack {
-                            Spacer()
-                            if working { ProgressView() } else { Text("Save & Continue").bold() }
-                            Spacer()
-                        }
-                    }
-                    .disabled(trimmedKey.isEmpty || working)
-                }
+                PrimaryButton(
+                    title: "Save & Continue",
+                    loading: working,
+                    enabled: !trimmedKey.isEmpty,
+                    action: save
+                )
 
-                Section {
-                    Button("Sign out", role: .destructive) { model.signOut() }
-                }
+                QuietButton(title: "Sign out") { model.signOut() }
             }
-            .navigationTitle("Almost there")
+            .padding(.horizontal, Theme.Space.lg)
+            .padding(.vertical, Theme.Space.xl)
         }
+        .screen()
     }
 
     private func save() {

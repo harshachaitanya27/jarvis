@@ -9,8 +9,9 @@ final class AppModel {
     enum Stage {
         case auth      // no token — sign up / log in
         case loading   // have a token, fetching the profile
-        case setup     // signed in but no provider key yet
-        case ready     // signed in and configured
+        case topics    // signed in but no topics yet
+        case setup     // has topics but no provider key yet
+        case ready     // fully configured
     }
 
     var token: String?
@@ -23,6 +24,7 @@ final class AppModel {
     var stage: Stage {
         if token == nil { return .auth }
         guard let profile else { return .loading }
+        if profile.topics.isEmpty { return .topics }
         return profile.configuredProviders.isEmpty ? .setup : .ready
     }
 

@@ -3,64 +3,83 @@ import SwiftUI
 struct AuthView: View {
     @Environment(AppModel.self) private var model
 
-    enum Mode: String, CaseIterable { case signUp = "Sign Up", logIn = "Log In" }
+    enum Mode { case signUp, logIn }
 
     @State private var mode: Mode = .signUp
     @State private var email = ""
     @State private var password = ""
-    @State private var topics = ""
     @State private var error: String?
     @State private var working = false
 
-    private var canSubmit: Bool {
-        !email.isEmpty && password.count >= 8 && !working
-    }
+    private var canSubmit: Bool { !email.isEmpty && password.count >= 8 && !working }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Picker("Mode", selection: $mode) {
-                    ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .listRowBackground(Color.clear)
-
-                Section {
-                    TextField("Email", text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    SecureField("Password (8+ characters)", text: $password)
-                        .textContentType(mode == .signUp ? .newPassword : .password)
-                }
-
-                if mode == .signUp {
-                    Section("Topics") {
-                        TextField("space, jazz history, AI", text: $topics)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                    }
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Theme.Space.xl) {
+                header
+                modeToggle
+                fields
 
                 if let error {
-                    Text(error)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                    Text(error).font(.system(size: 13)).foregroundStyle(Theme.danger)
                 }
 
-                Section {
-                    Button(action: submit) {
-                        HStack {
-                            Spacer()
-                            if working { ProgressView() } else { Text(mode.rawValue).bold() }
-                            Spacer()
-                        }
-                    }
-                    .disabled(!canSubmit)
-                }
+                PrimaryButton(
+                    title: mode == .signUp ? "Create account" : "Log in",
+                    loading: working,
+                    enabled: canSubmit,
+                    action: submit
+                )
             }
-            .navigationTitle("Jarvis")
+            .padding(.horizontal, Theme.Space.lg)
+            .padding(.vertical, Theme.Space.xl)
+        }
+        .screen()
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.sm) {
+            Eyebrow("Your daily podcast")
+            DisplayTitle("Jarvis", size: 46)
+        }
+    }
+
+    private var modeToggle: some View {
+        HStack(spacing: Theme.Space.lg) {
+            modeButton("Sign Up", .signUp)
+            modeButton("Log In", .logIn)
+            Spacer()
+        }
+    }
+
+    private func modeButton(_ title: String, _ value: Mode) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) { mode = value }
+        } label: {
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(mode == value ? Theme.ink : Theme.muted)
+                Rectangle()
+                    .fill(mode == value ? Theme.ink : Color.clear)
+                    .frame(height: 2)
+            }
+            .fixedSize()
+        }
+    }
+
+    private var fields: some View {
+        VStack(spacing: Theme.Space.lg) {
+            TextField("Email", text: $email)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .underlinedField()
+
+            SecureField("Password (8+ characters)", text: $password)
+                .textContentType(mode == .signUp ? .newPassword : .password)
+                .underlinedField()
         }
     }
 
@@ -72,12 +91,8 @@ struct AuthView: View {
                 let token: String
                 switch mode {
                 case .signUp:
-                    let list = topics
-                        .split(separator: ",")
-                        .map { $0.trimmingCharacters(in: .whitespaces) }
-                        .filter { !$0.isEmpty }
                     token = try await APIClient.shared
-                        .signup(email: email, password: password, topics: list)
+                        .signup(email: email, password: password, topics: [])
                         .accessToken
                 case .logIn:
                     token = try await APIClient.shared
