@@ -26,6 +26,9 @@ targets:
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
+        # Keep audio playing in the background / on the lock screen.
+        UIBackgroundModes:
+          - audio
         # Allow plain-HTTP to a locally-run backend during development.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
