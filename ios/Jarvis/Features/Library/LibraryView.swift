@@ -30,7 +30,11 @@ struct LibraryView: View {
         }
         .screen()
         .refreshable { await load() }
-        .task { await load() }
+        .task {
+            await load()
+            if let token = app.token { model.startPolling(token: token) }
+        }
+        .onDisappear { model.stopPolling() }
         .fullScreenCover(item: $selected) { episode in
             if let token = app.token {
                 PlayerView(episode: episode, token: token)
@@ -48,29 +52,46 @@ struct LibraryView: View {
         .padding(.bottom, Theme.Space.lg)
     }
 
+    @ViewBuilder
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.lg) {
-            VStack(alignment: .leading, spacing: Theme.Space.md) {
-                Text("No episodes yet")
+        if model.generating {
+            generatingState
+        } else {
+            VStack(alignment: .leading, spacing: Theme.Space.lg) {
+                VStack(alignment: .leading, spacing: Theme.Space.md) {
+                    Text("No episodes yet")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("New episodes arrive automatically each morning. Want one now?")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                PrimaryButton(title: "Generate my first episode") {
+                    Task { await generateFirst() }
+                }
+
+                if let error = model.error {
+                    Text(error).font(.system(size: 13)).foregroundStyle(Theme.danger)
+                }
+            }
+            .padding(.top, Theme.Space.xl)
+        }
+    }
+
+    private var generatingState: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.md) {
+            HStack(spacing: Theme.Space.sm) {
+                ProgressView().tint(Theme.accent)
+                Text("Generating your first episode")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(Theme.ink)
-                Text("New episodes arrive automatically each morning. Want one now?")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            PrimaryButton(
-                title: "Generate my first episode",
-                loading: model.starting,
-                enabled: !model.starting
-            ) {
-                Task { await generateFirst() }
-            }
-
-            if let error = model.error {
-                Text(error).font(.system(size: 13)).foregroundStyle(Theme.danger)
-            }
+            Text("This takes about a minute. It'll appear here automatically when it's ready.")
+                .font(.system(size: 15))
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, Theme.Space.xl)
     }
