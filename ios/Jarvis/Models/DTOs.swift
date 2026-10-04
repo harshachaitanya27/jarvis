@@ -15,6 +15,23 @@ struct UserProfile: Decodable, Identifiable {
     let dailyQuestionQuota: Int
 }
 
+struct Episode: Decodable, Identifiable {
+    let id: String
+    let title: String?
+    let status: String
+    let topics: [String]
+    let durationSeconds: Double?
+    let createdAt: String?
+    let audioUrl: String?
+
+    var isReady: Bool { status == "ready" }
+    var isFailed: Bool { status == "failed" }
+    var displayTitle: String { title ?? topics.first ?? "Untitled" }
+}
+
+/// For endpoints whose body we don't need (extra keys are ignored).
+struct EmptyResponse: Decodable {}
+
 // Request bodies (encoded with .convertToSnakeCase)
 
 struct SignupBody: Encodable {

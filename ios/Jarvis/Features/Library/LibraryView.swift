@@ -1,33 +1,100 @@
 import SwiftUI
 
-/// Placeholder for the episode library — the list + player come in the next PR.
 struct LibraryView: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AppModel.self) private var app
+    @State private var model = LibraryModel()
+    @State private var selected: Episode?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Eyebrow("Library")
-                Spacer()
-                QuietButton(title: "Sign out") { model.signOut() }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                header
+
+                if model.episodes.isEmpty {
+                    emptyState
+                } else {
+                    ForEach(model.episodes) { episode in
+                        Button {
+                            if episode.isReady { selected = episode }
+                        } label: {
+                            EpisodeRow(episode: episode)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!episode.isReady)
+                        Hairline()
+                    }
+                }
             }
             .padding(.horizontal, Theme.Space.lg)
-            .padding(.top, Theme.Space.lg)
-
-            Spacer()
-
-            VStack(alignment: .leading, spacing: Theme.Space.md) {
-                DisplayTitle("No episodes\nyet", size: 36)
-                Text("Episodes generated from your topics will appear here each morning.")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, Theme.Space.lg)
-
-            Spacer()
-            Spacer()
+            .padding(.bottom, Theme.Space.xl)
         }
         .screen()
+        .refreshable { await load() }
+        .task { await load() }
+        .fullScreenCover(item: $selected) { episode in
+            if let token = app.token {
+                PlayerView(episode: episode, token: token)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            DisplayTitle("Library", size: 40)
+            Spacer()
+            QuietButton(title: "Sign out") { app.signOut() }
+        }
+        .padding(.top, Theme.Space.xl)
+        .padding(.bottom, Theme.Space.lg)
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.md) {
+            Text("No episodes yet")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+            Text("Episodes generated from your topics will appear here. Pull to refresh.")
+                .font(.system(size: 15))
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, Theme.Space.xl)
+    }
+
+    private func load() async {
+        guard let token = app.token else { return }
+        await model.load(token: token)
+    }
+}
+
+private struct EpisodeRow: View {
+    let episode: Episode
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.sm) {
+            Text(episode.displayTitle)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(episode.isReady ? Theme.ink : Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: Theme.Space.sm) {
+                Eyebrow(statusLabel, color: statusColor)
+                if episode.isReady, let duration = episode.durationSeconds {
+                    Eyebrow("· \(Int(duration / 60)) min")
+                }
+            }
+        }
+        .padding(.vertical, Theme.Space.lg)
+    }
+
+    private var statusLabel: String {
+        if episode.isReady { return "Ready" }
+        if episode.isFailed { return "Failed" }
+        return "Generating"
+    }
+
+    private var statusColor: Color {
+        episode.isFailed ? Theme.danger : Theme.muted
     }
 }

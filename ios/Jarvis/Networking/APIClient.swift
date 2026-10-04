@@ -44,6 +44,21 @@ actor APIClient {
         try await request("me/keys", method: "PUT", body: KeysBody(keys: keys), token: token)
     }
 
+    func episodes(token: String) async throws -> [Episode] {
+        try await request("me/episodes", method: "GET", token: token)
+    }
+
+    func logFeedback(episodeId: String, type: String, position: Double?, token: String) async throws {
+        struct Body: Encodable {
+            let type: String
+            let positionSeconds: Double?
+        }
+        let _: EmptyResponse = try await request(
+            "me/episodes/\(episodeId)/feedback", method: "POST",
+            body: Body(type: type, positionSeconds: position), token: token
+        )
+    }
+
     // MARK: Request plumbing
 
     private func request<Response: Decodable, Body: Encodable>(
