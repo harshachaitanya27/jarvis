@@ -5,7 +5,7 @@ struct PlayerView: View {
     let token: String
 
     @Environment(\.dismiss) private var dismiss
-    @State private var player = PlayerModel()
+    private let player = PlayerModel.shared
     @State private var scrubbing = false
     @State private var scrubValue: Double = 0
 
@@ -13,7 +13,7 @@ struct PlayerView: View {
         VStack(alignment: .leading, spacing: Theme.Space.lg) {
             HStack {
                 QuietButton(title: "Close") {
-                    player.stop()
+                    // Keep playing — audio continues on the lock screen / CarPlay.
                     dismiss()
                 }
                 Spacer()

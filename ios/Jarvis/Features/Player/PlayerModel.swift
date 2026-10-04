@@ -7,16 +7,21 @@ import Observation
 @MainActor
 @Observable
 final class PlayerModel {
+    /// Shared across the phone UI and the CarPlay scene so both drive one
+    /// AVPlayer / audio session rather than fighting over playback.
+    static let shared = PlayerModel()
+
     private(set) var isPlaying = false
     private(set) var currentTime: Double = 0
     private(set) var duration: Double = 0
+    private(set) var currentEpisode: Episode?
 
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
-    @ObservationIgnored private var episode: Episode?
     @ObservationIgnored private var token: String?
     @ObservationIgnored private var sessionConfigured = false
+    @ObservationIgnored private var remoteConfigured = false
 
     static func audioURL(for episode: Episode) -> URL? {
         guard let path = episode.audioUrl else { return nil }
@@ -25,8 +30,15 @@ final class PlayerModel {
 
     func load(_ episode: Episode, token: String) {
         guard let url = Self.audioURL(for: episode) else { return }
+        // Already on this episode (e.g. started from CarPlay, now opened on the
+        // phone) — keep the stream, just make sure it's playing.
+        if currentEpisode?.id == episode.id, player != nil {
+            self.token = token
+            play()
+            return
+        }
         teardown()
-        self.episode = episode
+        self.currentEpisode = episode
         self.token = token
         self.duration = episode.durationSeconds ?? 0
         configureSessionOnce()
@@ -99,7 +111,7 @@ final class PlayerModel {
     }
 
     private func logFeedback(_ type: String) {
-        guard let episode, let token else { return }
+        guard let episode = currentEpisode, let token else { return }
         let position = currentTime
         Task {
             try? await APIClient.shared.logFeedback(
@@ -110,7 +122,7 @@ final class PlayerModel {
 
     private func updateNowPlaying() {
         var info: [String: Any] = [
-            MPMediaItemPropertyTitle: episode?.displayTitle ?? "Jarvis",
+            MPMediaItemPropertyTitle: currentEpisode?.displayTitle ?? "Jarvis",
             MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
         ]
@@ -119,6 +131,8 @@ final class PlayerModel {
     }
 
     private func setupRemoteCommands() {
+        guard !remoteConfigured else { return }  // targets persist; add them once
+        remoteConfigured = true
         let center = MPRemoteCommandCenter.shared()
         center.playCommand.addTarget { [weak self] _ in
             Task { @MainActor in self?.play() }
