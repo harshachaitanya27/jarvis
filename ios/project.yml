@@ -19,13 +19,23 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO
+        # CarPlay needs Apple's "CarPlay audio app" entitlement granted for this
+        # App ID. Once granted, uncomment the line below and run
+        # `xcodegen generate`; until then phone builds keep signing normally.
+        # CODE_SIGN_ENTITLEMENTS: Jarvis/Jarvis.entitlements
     info:
       path: Jarvis/Info.plist
       properties:
         CFBundleDisplayName: Jarvis
         UILaunchScreen: {}
         UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: false
+          # CarPlay runs as its own scene alongside the SwiftUI window scene
+          # (which SwiftUI manages, so it isn't listed here).
+          UIApplicationSupportsMultipleScenes: true
+          UISceneConfigurations:
+            CPTemplateApplicationSceneSessionRoleApplication:
+              - UISceneConfigurationName: CarPlay
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).CarPlaySceneDelegate
         # Keep audio playing in the background / on the lock screen.
         UIBackgroundModes:
           - audio

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- CarPlay audio app. Requires Apple to grant the "CarPlay audio app"
+         entitlement for your App ID before this can be code-signed on a device.
+         Until then, leave CODE_SIGN_ENTITLEMENTS out of project.yml so phone
+         builds keep signing. See ios/Jarvis/Features/CarPlay/README note. -->
+    <key>com.apple.developer.carplay-audio</key>
+    <true/>
+</dict>
+</plist>
