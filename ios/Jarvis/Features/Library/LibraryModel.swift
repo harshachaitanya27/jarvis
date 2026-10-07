@@ -16,6 +16,9 @@ final class LibraryModel {
         generating || episodes.contains { !$0.isReady && !$0.isFailed }
     }
 
+    /// An episode failed to generate — surface a retry.
+    var hasFailure: Bool { episodes.contains(where: \.isFailed) }
+
     func load(token: String) async {
         loading = true
         defer { loading = false }

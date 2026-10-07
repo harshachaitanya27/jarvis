@@ -23,6 +23,7 @@ struct Episode: Decodable, Identifiable {
     let durationSeconds: Double?
     let createdAt: String?
     let audioUrl: String?
+    let error: String?
 
     var isReady: Bool { status == "ready" }
     var isFailed: Bool { status == "failed" }

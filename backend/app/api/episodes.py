@@ -62,6 +62,7 @@ async def _summary(episode: Episode, storage: StorageProvider) -> EpisodeSummary
         duration_seconds=episode.duration_seconds,
         created_at=episode.created_at,
         audio_url=audio_url,
+        error=episode.error,
     )
 
 

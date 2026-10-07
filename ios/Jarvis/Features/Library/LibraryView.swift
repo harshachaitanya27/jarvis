@@ -23,6 +23,7 @@ struct LibraryView: View {
                         .disabled(!episode.isReady)
                         Hairline()
                     }
+                    if model.hasFailure { retryFooter }
                 }
             }
             .padding(.horizontal, Theme.Space.lg)
@@ -80,6 +81,24 @@ struct LibraryView: View {
         }
     }
 
+    private var retryFooter: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.md) {
+            Text("Some episodes didn't finish generating. You can try again.")
+                .font(.system(size: 15))
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            PrimaryButton(title: "Try again", loading: model.generating, enabled: !model.generating) {
+                Task { await generateFirst() }
+            }
+
+            if let error = model.error {
+                Text(error).font(.system(size: 13)).foregroundStyle(Theme.danger)
+            }
+        }
+        .padding(.top, Theme.Space.lg)
+    }
+
     private var generatingState: some View {
         VStack(alignment: .leading, spacing: Theme.Space.md) {
             HStack(spacing: Theme.Space.sm) {
@@ -126,6 +145,13 @@ private struct EpisodeRow: View {
                 if episode.isReady, let duration = episode.durationSeconds {
                     Eyebrow("· \(Int(duration / 60)) min")
                 }
+            }
+
+            if episode.isFailed, let reason = episode.error, !reason.isEmpty {
+                Text(reason)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.vertical, Theme.Space.lg)

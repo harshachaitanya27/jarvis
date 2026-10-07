@@ -86,6 +86,36 @@ def test_library_lists_serves_and_isolates():
     )
 
 
+async def _seed_failed_episode(user_id: str, reason: str) -> str:
+    """Insert a FAILED episode via a throwaway engine (own loop)."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from app.adapters.db.repositories import SqlEpisodeRepository
+    from app.domain.entities import Episode, EpisodeStatus
+
+    engine = create_async_engine(os.environ["DATABASE_URL"])
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as s:
+        episodes = SqlEpisodeRepository(s)
+        ep = await episodes.create(Episode(id="", user_id=user_id, topics=["space"]))
+        await episodes.set_status(ep.id, EpisodeStatus.FAILED, error=reason)
+        await s.commit()
+    await engine.dispose()
+    return ep.id
+
+
+def test_failed_episode_surfaces_its_error():
+    auth = _signup("failed@example.com")
+    user_id = client.get("/me", headers=auth).json()["id"]
+    asyncio.run(_seed_failed_episode(user_id, "no openai key configured"))
+
+    items = client.get("/me/episodes", headers=auth).json()
+    assert len(items) == 1
+    assert items[0]["status"] == "failed"
+    assert items[0]["error"] == "no openai key configured"
+    assert items[0]["audio_url"] is None
+
+
 def test_unknown_episode_is_404():
     auth = _signup("nobody@example.com")
     assert client.get("/me/episodes/does-not-exist", headers=auth).status_code == 404
