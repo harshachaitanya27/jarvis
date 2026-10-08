@@ -104,16 +104,20 @@ async def _seed_failed_episode(user_id: str, reason: str) -> str:
     return ep.id
 
 
-def test_failed_episode_surfaces_its_error():
+def test_failed_episode_surfaces_a_friendly_error():
     auth = _signup("failed@example.com")
     user_id = client.get("/me", headers=auth).json()["id"]
-    asyncio.run(_seed_failed_episode(user_id, "no openai key configured"))
+    # Store a raw, technical reason like generation would.
+    asyncio.run(_seed_failed_episode(user_id, "Error code: 401 - Incorrect API key provided: sk-abc"))
 
     items = client.get("/me/episodes", headers=auth).json()
     assert len(items) == 1
     assert items[0]["status"] == "failed"
-    assert items[0]["error"] == "no openai key configured"
     assert items[0]["audio_url"] is None
+    # The user sees calm guidance, not the raw status code / key fragment.
+    assert items[0]["error"] == "Your AI provider key looks invalid or missing. Re-add it, then try again."
+    assert "401" not in items[0]["error"]
+    assert "sk-abc" not in items[0]["error"]
 
 
 def test_unknown_episode_is_404():

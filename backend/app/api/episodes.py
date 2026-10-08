@@ -15,6 +15,7 @@ from app.api.deps import (
     get_storage,
     get_transcript_repo,
 )
+from app.api.error_messages import friendly_error
 from app.api.schemas import (
     EpisodeSummary,
     TranscriptResponse,
@@ -62,7 +63,7 @@ async def _summary(episode: Episode, storage: StorageProvider) -> EpisodeSummary
         duration_seconds=episode.duration_seconds,
         created_at=episode.created_at,
         audio_url=audio_url,
-        error=episode.error,
+        error=friendly_error(episode.error),
     )
 
 
