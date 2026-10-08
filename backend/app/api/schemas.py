@@ -66,6 +66,8 @@ class EpisodeSummary(BaseModel):
     created_at: datetime | None
     # Present only when the episode is ready; a playable (signed where supported) URL.
     audio_url: str | None
+    # Present only when the episode failed; the reason, so the app can show it.
+    error: str | None = None
 
 
 class TranscriptSegmentModel(BaseModel):

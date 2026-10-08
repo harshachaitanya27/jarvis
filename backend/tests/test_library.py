@@ -86,6 +86,40 @@ def test_library_lists_serves_and_isolates():
     )
 
 
+async def _seed_failed_episode(user_id: str, reason: str) -> str:
+    """Insert a FAILED episode via a throwaway engine (own loop)."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from app.adapters.db.repositories import SqlEpisodeRepository
+    from app.domain.entities import Episode, EpisodeStatus
+
+    engine = create_async_engine(os.environ["DATABASE_URL"])
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as s:
+        episodes = SqlEpisodeRepository(s)
+        ep = await episodes.create(Episode(id="", user_id=user_id, topics=["space"]))
+        await episodes.set_status(ep.id, EpisodeStatus.FAILED, error=reason)
+        await s.commit()
+    await engine.dispose()
+    return ep.id
+
+
+def test_failed_episode_surfaces_a_friendly_error():
+    auth = _signup("failed@example.com")
+    user_id = client.get("/me", headers=auth).json()["id"]
+    # Store a raw, technical reason like generation would.
+    asyncio.run(_seed_failed_episode(user_id, "Error code: 401 - Incorrect API key provided: sk-abc"))
+
+    items = client.get("/me/episodes", headers=auth).json()
+    assert len(items) == 1
+    assert items[0]["status"] == "failed"
+    assert items[0]["audio_url"] is None
+    # The user sees calm guidance, not the raw status code / key fragment.
+    assert items[0]["error"] == "Your AI provider key looks invalid or missing. Re-add it, then try again."
+    assert "401" not in items[0]["error"]
+    assert "sk-abc" not in items[0]["error"]
+
+
 def test_unknown_episode_is_404():
     auth = _signup("nobody@example.com")
     assert client.get("/me/episodes/does-not-exist", headers=auth).status_code == 404
