@@ -14,13 +14,21 @@ struct LibraryView: View {
                     emptyState
                 } else {
                     ForEach(model.episodes) { episode in
-                        Button {
-                            if episode.isReady { selected = episode }
-                        } label: {
-                            EpisodeRow(episode: episode)
+                        HStack(alignment: .top, spacing: Theme.Space.md) {
+                            Button {
+                                if episode.isReady { selected = episode }
+                            } label: {
+                                EpisodeRow(episode: episode)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!episode.isReady)
+
+                            if episode.isReady {
+                                DownloadControl(episode: episode)
+                                    .padding(.top, Theme.Space.lg)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .disabled(!episode.isReady)
                         Hairline()
                     }
                     if model.hasFailure { retryFooter }
@@ -123,6 +131,34 @@ struct LibraryView: View {
     private func load() async {
         guard let token = app.token else { return }
         await model.load(token: token)
+    }
+}
+
+/// Per-episode download affordance: tap to save for offline, tap the check to
+/// remove. Muted/ink only — the gold accent stays reserved for playback.
+private struct DownloadControl: View {
+    let episode: Episode
+    private let store = DownloadStore.shared
+
+    var body: some View {
+        Group {
+            if store.isDownloading(episode.id) {
+                ProgressView().controlSize(.small).tint(Theme.muted)
+            } else if store.isDownloaded(episode.id) {
+                Button { store.remove(episode.id) } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Theme.ink)
+                }
+            } else {
+                Button { Task { await store.download(episode) } } label: {
+                    Image(systemName: "arrow.down.circle")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+        }
+        .frame(width: 28, height: 28)
     }
 }
 

@@ -29,7 +29,8 @@ final class PlayerModel {
     }
 
     func load(_ episode: Episode, token: String) {
-        guard let url = Self.audioURL(for: episode) else { return }
+        // Prefer an offline copy; fall back to streaming from the backend.
+        guard let url = DownloadStore.shared.localURL(for: episode.id) ?? Self.audioURL(for: episode) else { return }
         // Already on this episode (e.g. started from CarPlay, now opened on the
         // phone) — keep the stream, just make sure it's playing.
         if currentEpisode?.id == episode.id, player != nil {
